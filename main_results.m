@@ -3,7 +3,7 @@ clc;
 
 wage_type = "log";
 solve_for_dist = true;
-name_file_firm_data  = "firms_out.csv";
+name_file_firm_data  = "Data/firms_out.csv";
 slope = 0;
 load_parameters
 solve_model

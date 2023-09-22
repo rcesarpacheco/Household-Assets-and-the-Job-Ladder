@@ -22,14 +22,11 @@ inc_unemployed = 0.1; %income when unemployed
 % assets
 amin = 0;    % borrowing constraint
 amax = 1000;  % range a
-N_a=1000;    % number of a grid points
+N_a=100;    % number of a grid points
 
 %simulation parameters
 tol_vf = 10^(-6); %criterion HJB loop
 Delta = 100;   %delta in HJB algorithm
-
-%ORNSTEIN-UHLENBECK IN LEVELS
-the = 0.16;
 
 % FIRMS - sigmas and mu for each wage path.
 
@@ -44,7 +41,7 @@ sigma_vec = table2array(firm_data(:,"sigma_ou_matlab"));
 sigma2_vec = sigma_vec.^2;
 firm_size_share = table2array(firm_data(:,'firm_share'));
 firm_rank = table2array(firm_data(:,"firm_rank")); %Firms ranked from lowest to highest
-
+thetas = table2array(firm_data(:,"theta")); % thetas for OU process
 
 % wage
 N_w=100;         % number of w grid points 
@@ -77,10 +74,10 @@ for i=1:N_f
     w_mean = w_mean_vec(i);
     sig2 = sigma2_vec(i);
     if wage_type == "log"
-        mu = (the*(w_mean - log(w))+sig2/2).*w;        %DRIFT (FROM ITO'S LEMMA)
+        mu = (thetas(i)*(w_mean - log(w))+sig2/2).*w;        %DRIFT (FROM ITO'S LEMMA)
         s2 = sig2.*w.^2;        %VARIANCE (FROM ITO'S LEMMA)
     else
-        mu = the*(w_mean - w);        %DRIFT (FROM ITO'S LEMMA)
+        mu = thetas(i)*(w_mean - w);        %DRIFT (FROM ITO'S LEMMA)
         s2 = sig2.*ones(1,N_w);        %VARIANCE (FROM ITO'S LEMMA)
     end
       
