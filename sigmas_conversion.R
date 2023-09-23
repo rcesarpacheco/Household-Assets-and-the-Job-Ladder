@@ -12,11 +12,13 @@ library(dplyr)
 #
 
 # preparing firm output data for matlab Log case --------------------------
-data_cluster <- fread(here('firms_logs_sep20.csv'))
+data_cluster <- fread(here('Data/firms_logs_sep22.csv'))
 tails_cuttof <- 1/100
 theta <- 0.15
 
-data_cluster <- rename(data_cluster,"mean_wage"="clust_mean_lwage_resid","sigma_wage"="clust_std_lwage_resid")
+data_cluster <- rename(data_cluster,"mean_wage"="clust_mean_lwage_resid",
+                       "sigma_wage"="clust_std_lwage_resid",
+                       "theta"="theta1")
 
 data_cluster[,sigma_ou_matlab:=sqrt(2*theta)*sigma_wage]
 data_cluster[,lower_w:=qlnorm(tails_cuttof,mean=mean_wage,sd = sigma_wage )]
@@ -26,7 +28,7 @@ data_cluster[,upper_w:=qlnorm(1-tails_cuttof,mean=mean_wage,sd = sigma_wage )]
 data_cluster[,min_w:=min(data_cluster$lower_w)]
 data_cluster[,max_w:=max(data_cluster$upper_w)]
 data_cluster[,firm_share:=firm_size/sum(firm_size)]
-fwrite(data_cluster,file = here('Joint Model/firms_out.csv'))
+fwrite(data_cluster,file = here('Data/firms_out.csv'))
 
 # plot firm characteristic -------------------------------------------------------------------
 data_cluster <- fread(here('wage in levels/firms_levels_out.csv'))

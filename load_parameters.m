@@ -5,12 +5,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ga = 2;       % CRRA utility with parameter gamma
-rho = 0.05;   % discount rate
-firing_rate = 0.17; % poisson rate of getting fired
-lambda_0 = 2.04; % poisson rate of job offers when unemployed.
-lambda_1 = 0.44; % poisson rate of job offers when employed.
+rho = 0.004;   % discount rate
+firing_rate = 0.015; % poisson rate of getting fired
+lambda_0 = 0.044; % poisson rate of job offers when unemployed.
+lambda_1 = 0.036; % poisson rate of job offers when employed.
 disutility_working = 0.0;
-r = 0.03; %interest rate
+r = 0.002; %interest rate
 inc_unemployed = 0.1; %income when unemployed
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,11 +21,11 @@ inc_unemployed = 0.1; %income when unemployed
 
 % assets
 amin = 0;    % borrowing constraint
-amax = 1000;  % range a
-N_a=100;    % number of a grid points
+amax = 10;  % range a
+N_a=200;    % number of a grid points
 
 %simulation parameters
-tol_vf = 10^(-6); %criterion HJB loop
+tol_vf = 10^(-8); %criterion HJB loop
 Delta = 100;   %delta in HJB algorithm
 
 % FIRMS - sigmas and mu for each wage path.
@@ -34,9 +34,6 @@ Delta = 100;   %delta in HJB algorithm
 % Firms ranked from lowest to highest in dataset
 firm_data = readtable(name_file_firm_data);
 w_mean_vec = table2array(firm_data(:,"mean_wage"));
-if wage_type =="log"
-    w_mean_vec = exp(w_mean_vec);
-end
 sigma_vec = table2array(firm_data(:,"sigma_ou_matlab"));
 sigma2_vec = sigma_vec.^2;
 firm_size_share = table2array(firm_data(:,'firm_share'));
@@ -44,7 +41,7 @@ firm_rank = table2array(firm_data(:,"firm_rank")); %Firms ranked from lowest to 
 thetas = table2array(firm_data(:,"theta")); % thetas for OU process
 
 % wage
-N_w=100;         % number of w grid points 
+N_w=500;         % number of w grid points 
 wmin = min(table2array(firm_data(:,'lower_w')));     % Range wages
 wmax = max(table2array(firm_data(:,'upper_w')));     % Range wages
 % each index of the sigma2_vec and mean_vec is a different firm.
@@ -114,7 +111,7 @@ for i=1:N_f
     end
     % find closest wage in the grid to the mean_wages. Not used here, will
     % be used later in the VF iteration!
-    [~,idx_wages_mean(i)] = min(abs(w-w_mean_vec(i)));
+    [~,idx_wages_mean(i)] = min(abs(w-exp(w_mean_vec(i))));
 end
 
 
