@@ -181,7 +181,17 @@ end
 
 if solve_for_dist
     %% solve for stationary distribution
+   
+    % A_aux: additional matrix to A that captures flows from Employment to
+    % Employment
+    % to employment.
     
+    % D_Aux: aditional matrix to D that captures flows from Unemployment to
+    % Unemployment
+
+    % C_aux: additional matrix to C that captures flows from Unemployment
+    % to employment.
+
     % D_aux
     I_offer_empl_better_unp = V_new_job_offer>repmat(U,1,N_f);
     D_aux = spdiags(lambda_0*sum((1-I_offer_empl_better_unp).*repmat(p,N_a,1),2),0,N_a,N_a);
@@ -215,6 +225,7 @@ if solve_for_dist
     row_to_firm = repelem(row_to_firm,N_f);
     w_array_idx = repmat(idx_wages_mean',1,N_a*N_w*N_f);
     f_array_idx = repmat(1:N_f,1,N_a*N_w*N_f);
+    
     columns = sub2ind(sz,row_to_firm,w_array_idx,f_array_idx);
     row = repelem(1:N_a*N_f*N_w,N_f);
     A_aux_2 = sparse(row,columns,reshape(elements_A_Aux_2',N_a*N_f*N_w*N_f,1),N_a*N_w*N_f,N_a*N_w*N_f);
