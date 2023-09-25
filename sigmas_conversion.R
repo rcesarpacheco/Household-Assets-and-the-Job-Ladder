@@ -9,7 +9,6 @@ library(forcats)
 library(ggthemes)
 library(cowplot)
 library(dplyr)
-#
 
 # preparing firm output data for matlab Log case --------------------------
 data_cluster <- fread(here('Data/firms_logs_sep22.csv'))
@@ -28,6 +27,30 @@ data_cluster[,max_w:=max(data_cluster$upper_w)]
 data_cluster[,firm_share:=firm_size/sum(firm_size)]
 fwrite(data_cluster,file = here('Data/firms_out.csv'))
 
+
+# generate fake dataset ---------------------------------------------------
+tails_cuttof <- 2.5/100
+n_firms <- 4
+mean_wage <- seq(from=1,to=1.5,length.out=n_firms)
+sigma_wage <- seq(from=0.5,to=1,length.out=n_firms)
+firm_rank <- 1:n_firms
+firm_size <- rep(1,n_firms)
+rank_fun <- 0
+thetas <- rep(0.15,n_firms)
+data_fake <- data.table(firm_cluster=firm_rank,
+                        mean_wage=mean_wage,
+                        sigma_wage=sigma_wage,
+                        firm_size=firm_size,
+                        theta=thetas,
+                        rank_fun=rank_fun,
+                        firm_rank=firm_rank)
+data_fake[,firm_share:=firm_size/sum(firm_size)]
+data_fake[,sigma_ou_matlab:=sqrt(2*theta)*sigma_wage]
+data_fake[,lower_w:=qlnorm(tails_cuttof,mean=mean_wage,sd = sigma_wage )]
+data_fake[,upper_w:=qlnorm(1-tails_cuttof,mean=mean_wage,sd = sigma_wage )]
+data_fake[,min_w:=min(data_fake$lower_w)]
+data_fake[,max_w:=max(data_fake$upper_w)]
+fwrite(data_fake,file = here('Data/firms_out_fake.csv'))
 # plot firm characteristic -------------------------------------------------------------------
 data_cluster <- fread(here('wage in levels/firms_levels_out.csv'))
 
@@ -39,7 +62,7 @@ plt <- ggplot(data_cluster,aes(x=mean_wage_resid,y=sd_diff_wage_resid,label=firm
   labs(size="Firm Size")+
   xlab(TeX(r"($\bar {w}_f$)"))
 plt
-ggsave(here('Figures/firm_characteristics.png'),plot = plt,height = 5,width=8,scale=1.2)
+# ggsave(here('Figures/firm_characteristics.png'),plot = plt,height = 5,width=8,scale=1.2)
 
 
 # indifference curve data -------------------------------------------------
