@@ -14,12 +14,10 @@ library(dplyr)
 # preparing firm output data for matlab Log case --------------------------
 data_cluster <- fread(here('Data/firms_logs_sep22.csv'))
 tails_cuttof <- 1/100
-theta <- 0.15
 
 data_cluster <- rename(data_cluster,"mean_wage"="clust_mean_lwage_resid",
                        "sigma_wage"="clust_std_lwage_resid",
                        "theta"="theta1")
-
 data_cluster[,sigma_ou_matlab:=sqrt(2*theta)*sigma_wage]
 data_cluster[,lower_w:=qlnorm(tails_cuttof,mean=mean_wage,sd = sigma_wage )]
 data_cluster[,upper_w:=qlnorm(1-tails_cuttof,mean=mean_wage,sd = sigma_wage )]
