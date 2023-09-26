@@ -111,7 +111,10 @@ for i=1:N_f
     end
     % find closest wage in the grid to the mean_wages. Not used here, will
     % be used later in the VF iteration!
-    [~,idx_wages_mean(i)] = min(abs(w-exp(w_mean_vec(i))));
+    if wage_type == "log"
+        [~,idx_wages_mean(i)] = min(abs(w-exp(w_mean_vec(i))));
+    else
+         [~,idx_wages_mean(i)] = min(abs(w-w_mean_vec(i)));
 end
 
 
