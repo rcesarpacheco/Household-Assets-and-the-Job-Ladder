@@ -115,6 +115,7 @@ for i=1:N_f
         [~,idx_wages_mean(i)] = min(abs(w-exp(w_mean_vec(i))));
     else
          [~,idx_wages_mean(i)] = min(abs(w-w_mean_vec(i)));
+    end
 end
 
 
