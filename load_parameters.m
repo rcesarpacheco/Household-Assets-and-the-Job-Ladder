@@ -5,12 +5,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ga = 2;       % CRRA utility with parameter gamma
-rho = 0.004;   % discount rate
-firing_rate = 0.015; % poisson rate of getting fired
-lambda_0 = 0.044; % poisson rate of job offers when unemployed.
-lambda_1 = 0.036; % poisson rate of job offers when employed.
+rho = 0.05;   % discount rate
+firing_rate = 0.175; % poisson rate of getting fired
+lambda_0 = 0.51; % poisson rate of job offers when unemployed.
+lambda_1 = 0.43; % poisson rate of job offers when employed.
 disutility_working = 0.0;
-r = 0.002; %interest rate
+r = 0.03; %interest rate
 inc_unemployed = 0.1; %income when unemployed
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
