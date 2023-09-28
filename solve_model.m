@@ -235,9 +235,9 @@ if solve_for_dist
     A_aux = A_aux_2+spdiags(diag_A_aux,0,N_a*N_w*N_f,N_a*N_w*N_f);
     
     A_dist = [A+A_aux,B;C+C_aux,D+D_aux];
-    V_iteration = [reshape(V,N_a*N_f*N_w,1);U];
-    V_dist = ([u_stacked;u_unemployed]+A_dist*V_iteration)/rho;
-    test = max(abs(V_iteration-V_dist)) % if this number is big, i think something is wrong. If it's small, it still might be wrong.
+    % V_iteration = [reshape(V,N_a*N_f*N_w,1);U];
+    % V_dist = ([u_stacked;u_unemployed]+A_dist*V_iteration)/rho;
+    % test = max(abs(V_iteration-V_dist)) % if this number is big, i think something is wrong. If it's small, it still might be wrong.
     
     
     
@@ -246,7 +246,7 @@ if solve_for_dist
     
     % %need to fix one value, otherwise matrix is singular
     i_fix = 1;
-    b(i_fix)=1;
+    b(i_fix)=.01;
     row = [zeros(1,i_fix-1),1,zeros(1,N_a*N_w*N_f+N_a-i_fix)];
     AT(i_fix,:) = row;
     % b(1)=1;
@@ -259,14 +259,13 @@ if solve_for_dist
     disp('done solving g')
     g_u = gg(N_a*N_w*N_f+1:end);
     g_e = reshape(gg(1:N_a*N_w*N_f),N_a,N_w,N_f);
-    sum_g = sum(g_e,"all")*da*dw+sum(g_u)*da; %normalizing so that the integral be equal to one
+    sum_g = sum(trapz(w,trapz(a,g_e,1),2))+trapz(a,g_u); %normalizing so that the integral be equal to one
     g_u=g_u/sum_g;
     g_e=g_e/sum_g;
 
     %% fraction of people employed in each firm
-    frac_employed = sum(g_e,'all')*da*dw;
-    frac_employed_per_firm = squeeze(sum(sum(g_e,1),2)*da*dw)/frac_employed;
-    frac_unemployed = sum(g_u)*da;
+    frac_unemployed = trapz(a,g_u);
+    frac_employed_per_firm = squeeze(trapz(w,trapz(a,g_e,1),2))/(1-frac_unemployed);
     loss = sum((frac_employed_per_firm-firm_size_share).^2);
 end
 

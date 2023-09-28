@@ -21,8 +21,8 @@ inc_unemployed = 0.1; %income when unemployed
 
 % assets
 amin = 0;    % borrowing constraint
-amax = 10;  % range a
-N_a=200;    % number of a grid points
+amax = 500*1e3;  % range a
+N_a=500;    % number of a grid points
 
 %simulation parameters
 tol_vf = 10^(-8); %criterion HJB loop
@@ -41,7 +41,7 @@ firm_rank = table2array(firm_data(:,"firm_rank")); %Firms ranked from lowest to 
 thetas = table2array(firm_data(:,"theta")); % thetas for OU process
 
 % wage
-N_w=500;         % number of w grid points 
+N_w=200;         % number of w grid points 
 wmin = min(table2array(firm_data(:,'lower_w')));     % Range wages
 wmax = max(table2array(firm_data(:,'upper_w')));     % Range wages
 % each index of the sigma2_vec and mean_vec is a different firm.
