@@ -250,14 +250,25 @@ if solve_for_dist
     disp('done solving g')
     g_u = gg(N_a*N_w*N_f+1:end);
     g_e = reshape(gg(1:N_a*N_w*N_f),N_a,N_w,N_f);
-    sum_g = sum(trapz(w,trapz(a,g_e,1),2))+trapz(a,g_u); %normalizing so that the integral be equal to one
+    if integral_type == "trapezoidal"
+        sum_g = sum(trapz(w,trapz(a,g_e,1),2))+trapz(a,g_u); %normalizing so that the integral be equal to one
+    else
+        sum_g = sum(g_e,"all")*da*dw+sum(g_u)*da; %normalizing so that the integral be equal to one
+    end
+
     g_u=g_u/sum_g;
     g_e=g_e/sum_g;
 
     %% fraction of people employed in each firm
-    frac_unemployed = trapz(a,g_u);
-    frac_employed_per_firm = squeeze(trapz(w,trapz(a,g_e,1),2))/(1-frac_unemployed);
-    loss = sum((frac_employed_per_firm-firm_size_share).^2);
+    if integral_type == "trapezoidal"
+        frac_unemployed = trapz(a,g_u);
+        frac_employed_per_firm = squeeze(trapz(w,trapz(a,g_e,1),2))/(1-frac_unemployed);
+    else
+        frac_employed = sum(g_e,'all')*da*dw;
+        frac_employed_per_firm = squeeze(sum(sum(g_e,1),2)*da*dw)/frac_employed;
+        frac_unemployed = sum(g_u)*da;
+    end
+     loss = sum((frac_employed_per_firm-firm_size_share).^2);
 end
 
 

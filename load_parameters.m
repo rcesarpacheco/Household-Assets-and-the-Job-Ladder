@@ -11,7 +11,7 @@ lambda_0 = 0.51; % poisson rate of job offers when unemployed.
 lambda_1 = 0.43; % poisson rate of job offers when employed.
 disutility_working = 0.0;
 r = 0.03; %interest rate
-inc_unemployed =1.2; %income when unemployed
+inc_unemployed =0.1; %income when unemployed
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                    %
