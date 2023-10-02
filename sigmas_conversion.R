@@ -11,7 +11,7 @@ library(cowplot)
 library(dplyr)
 
 # preparing firm output data for matlab Log case --------------------------
-data_cluster <- fread(here('Data/firms_logs_sep28.csv'))
+data_cluster <- fread(here('Data/firms_logs_sep22.csv'))
 tails_cuttof <- 1/100
 
 data_cluster <- rename(data_cluster,"mean_wage"="clust_mean_lwage_resid",
