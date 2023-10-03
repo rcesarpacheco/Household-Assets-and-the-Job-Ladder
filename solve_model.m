@@ -270,31 +270,3 @@ if solve_for_dist
     end
      loss = sum((frac_employed_per_firm-firm_size_share).^2);
 end
-
-
-
-
-% %% checking cross
-% 
-% diff_v_offers = zeros(N_a,N_f*(N_f-1)/2);
-% same_sign = zeros(N_f*(N_f-1)/2,1);
-% idx=1;
-% for i=1:N_f
-%     for j=(i+1):N_f
-%         current_column=V_new_job_offer(:,i)-V_new_job_offer(:,j);
-%         diff_v_offers(:,idx) = current_column;
-%         same_sign(idx) = ~any(diff(sign(current_column(current_column~=0))));
-%         idx=idx+1;
-%     end
-% end
-% 
-% %% checking preferences over firms for each asset level
-% 
-% preferences = zeros(N_a,N_f);
-% 
-% for i=1:N_a
-%     current_asset = V_new_job_offer(i,:);
-%     [~,preferences(i,:)] = sort(current_asset,'descend');
-% end
-% 
-% 
