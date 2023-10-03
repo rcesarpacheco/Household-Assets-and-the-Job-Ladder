@@ -263,10 +263,14 @@ if solve_for_dist
     if integral_type == "trapezoidal"
         frac_unemployed = trapz(a,g_u);
         frac_employed_per_firm = squeeze(trapz(w,trapz(a,g_e,1),2))/(1-frac_unemployed);
+        flows_out_unemployment = lambda_0*p.*trapz(a,g_u.*(U<V_new_job_offer),1);
+        frac_flows_unemployment = flows_out_unemployment/sum(flows_out_unemployment);
     else
         frac_employed = sum(g_e,'all')*da*dw;
         frac_employed_per_firm = squeeze(sum(sum(g_e,1),2)*da*dw)/frac_employed;
         frac_unemployed = sum(g_u)*da;
+        flows_out_unemployment = lambda_0*p.*sum(g_u.*(U<V_new_job_offer),1)*da;
+        frac_flows_unemployment = flows_out_unemployment/sum(flows_out_unemployment);
     end
      loss = sum((frac_employed_per_firm-firm_size_share).^2);
 end
