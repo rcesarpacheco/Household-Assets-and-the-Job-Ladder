@@ -39,7 +39,9 @@ sigma2_vec = sigma_vec.^2;
 firm_size_share = table2array(firm_data(:,'firm_share'));
 firm_rank = table2array(firm_data(:,"firm_rank")); %Firms ranked from lowest to highest
 thetas = table2array(firm_data(:,"theta")); % thetas for OU process
+share_flows_unemployment_data =  table2array(firm_data(:,"unemployment_to_employment_flow_share"))';
 
+p = share_flows_unemployment_data;
 % wage
 N_w=100;         % number of w grid points 
 wmin = min(table2array(firm_data(:,'lower_w')));     % Range wages
@@ -160,3 +162,4 @@ param.rho=rho;
 param.tol_vf=tol_vf;
 param.w=w;
 param.ww=ww;
+param.p = p;

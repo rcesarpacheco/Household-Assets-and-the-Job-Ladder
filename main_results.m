@@ -5,11 +5,10 @@ wage_type = "log"; %either log or level
 integral_type = "sum"; % either trapezoidal or sum
 solve_for_dist = true;
 name_file_firm_data  = "Data/firms_out.csv";
-slope = 0;
 load_parameters
 solve_model
 frac_unemployed
-prob_accepting_offer = sum((U<V_new_job_offer).*g_u.*repmat(p,N_a,1),'all')/sum(g_u,'all')
+prob_accepting_offer = sum((U<V_new_job_offer).*repmat(g_u,1,N_f).*repmat(p,N_a,1),'all')/sum(g_u,'all')
 %% indifference curves
 
 idx_current_wealth = 10;

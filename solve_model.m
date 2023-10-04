@@ -1,7 +1,5 @@
 %Finite difference approximation of the partial derivatives
 % employed
-constant = 1/N_f*(1-slope*sum(firm_rank));
-p = slope*firm_rank'+constant;
 Vaf = zeros(N_a,N_w,N_f); % forward difference            
 Vab = zeros(N_a,N_w,N_f); % backward difference
 
