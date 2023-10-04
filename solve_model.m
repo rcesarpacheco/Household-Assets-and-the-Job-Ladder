@@ -258,17 +258,30 @@ if solve_for_dist
     g_e=g_e/sum_g;
 
     %% fraction of people employed in each firm
+    flow_j2j = zeros(1,N_f);
     if integral_type == "trapezoidal"
         frac_unemployed = trapz(a,g_u);
         frac_employed_per_firm = squeeze(trapz(w,trapz(a,g_e,1),2))/(1-frac_unemployed);
         flows_out_unemployment = lambda_0*p.*trapz(a,g_u.*(U<V_new_job_offer),1);
         frac_flows_unemployment = flows_out_unemployment/sum(flows_out_unemployment);
+        for i=1:N_f % i is current firm
+            offer_better_than_current_job = repmat(V_new_job_offer(:,i),1,N_w,N_f)>V;
+            flow_j2j(i)= lambda_1*p(i)*sum(trapz(w,trapz(a,offer_better_than_current_job.*g_e,1),2));
+        end
     else
         frac_employed = sum(g_e,'all')*da*dw;
         frac_employed_per_firm = squeeze(sum(sum(g_e,1),2)*da*dw)/frac_employed;
         frac_unemployed = sum(g_u)*da;
         flows_out_unemployment = lambda_0*p.*sum(g_u.*(U<V_new_job_offer),1)*da;
         frac_flows_unemployment = flows_out_unemployment/sum(flows_out_unemployment);
+        % add job to job flows
+        for i=1:N_f % i is current firm
+            offer_better_than_current_job = repmat(V_new_job_offer(:,i),1,N_w,N_f)>V;
+            flow_j2j(i)= lambda_1*p(i)*sum(offer_better_than_current_job.*g_e,'all')*da*dw;
+        end
     end
-     loss = sum((frac_employed_per_firm-firm_size_share).^2);
+    total_flows_from_unemp = sum(flows_out_unemployment);
+    total_j2j_flows = sum(flow_j2j);
+    share_j2j_flows_out_total_flows = total_j2j_flows/(total_j2j_flows+total_flows_from_unemp);
+    loss = (share_j2j_flows_out_total_flows-share_j2j_flows_out_total_flows_data)^2;
 end

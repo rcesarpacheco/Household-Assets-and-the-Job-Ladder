@@ -1,9 +1,10 @@
 clear;
 clc;
-
 wage_type = "log"; %either log or level
 integral_type = "sum"; % either trapezoidal or sum
 solve_for_dist = true;
+lambda_1 = 0.1207;
+share_j2j_flows_out_total_flows_data = 0.27;
 name_file_firm_data  = "Data/firms_out.csv";
 load_parameters
 solve_model
