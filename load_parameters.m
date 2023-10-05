@@ -10,7 +10,7 @@ firing_rate = 0.175; % poisson rate of getting fired
 lambda_0 = 0.51; % poisson rate of job offers when unemployed.
 disutility_working = 0.0;
 r = 0.03; %interest rate
-inc_unemployed =0.1; %income when unemployed
+inc_unemployed =exp(-1.595); %income when unemployed
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                    %
@@ -42,7 +42,7 @@ share_flows_unemployment_data =  table2array(firm_data(:,"unemployment_to_employ
 
 p = share_flows_unemployment_data;
 % wage
-N_w=100;         % number of w grid points 
+N_w=200;         % number of w grid points 
 wmin = min(table2array(firm_data(:,'lower_w')));     % Range wages
 wmax = max(table2array(firm_data(:,'upper_w')));     % Range wages
 % each index of the sigma2_vec and mean_vec is a different firm.

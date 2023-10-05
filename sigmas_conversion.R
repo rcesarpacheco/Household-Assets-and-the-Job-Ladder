@@ -29,6 +29,32 @@ data_cluster[,firm_share:=firm_size/sum(firm_size)]
 fwrite(data_cluster,file = here('Data/firms_out.csv'))
 
 
+# generate theoretical wage densities -------------------------------------
+data_cluster <- fread(here('Data/firms_out.csv'))
+data_density_model <- fread(here('Data/wage_densities_model.csv'))
+clusters <- data_cluster$firm_cluster
+colnames(data_density_model) <- c("wage",clusters)
+w <- data_density_model$wage
+data_density_model <- melt(data_density_model,id.vars = 'wage',
+                           variable.name = 'firm_cluster',
+                           value.name = 'model')
+df_densities <- data.table()
+for (i in 1:length(clusters)) {
+  mean <- data_cluster[firm_cluster==clusters[i],mean_wage]
+  sigma <- data_cluster[firm_cluster==clusters[i],sigma_ou_matlab]
+  pdf <- dlnorm(w,mean,sigma)
+  df_aux <- data.table(firm_cluster=clusters[i],wage=w,theory=pdf)
+  df_densities <- rbind(df_densities,df_aux)
+}
+df_densities[,firm_cluster:=as.factor(firm_cluster)]
+df_densities <- merge(df_densities,data_density_model,by=c('wage','firm_cluster'))
+df_densities <- melt(df_densities,id.vars = c('wage','firm_cluster'),
+                           variable.name = 'source',
+                           value.name = 'density')
+ggplot(df_densities,aes(x=wage,y=density,color=firm_cluster,linetype=source))+
+  geom_line()+
+  theme_bw()
+
 # generate fake dataset ---------------------------------------------------
 tails_cuttof <- 2.5/100
 n_firms <- 4
@@ -53,17 +79,17 @@ data_fake[,min_w:=min(data_fake$lower_w)]
 data_fake[,max_w:=max(data_fake$upper_w)]
 fwrite(data_fake,file = here('Data/firms_out_fake.csv'))
 # plot firm characteristic -------------------------------------------------------------------
-data_cluster <- fread(here('wage in levels/firms_levels_out.csv'))
+data_cluster <- fread(here('Data/firms_out.csv'))
 
-plt <- ggplot(data_cluster,aes(x=mean_wage_resid,y=sd_diff_wage_resid,label=firm_rank))+
+plt <- ggplot(data_cluster,aes(x=mean_wage,y=sigma_wage,label=firm_cluster))+
   geom_point(aes(size=firm_size),color='#007bc8')+
   theme_classic()+
-  geom_text_repel(nudge_y=0.5,show.legend=FALSE,min.segment.length = Inf)+
+  geom_text_repel(nudge_y=0.0005,show.legend=FALSE,min.segment.length = Inf)+
   ylab(TeX(r"($\sigma_f$)"))+
   labs(size="Firm Size")+
   xlab(TeX(r"($\bar {w}_f$)"))
 plt
-# ggsave(here('Figures/firm_characteristics.png'),plot = plt,height = 5,width=8,scale=1.2)
+ggsave(here('Figures/firm_characteristics.png'),plot = plt,height = 5,width=8,scale=1.2)
 
 
 # indifference curve data -------------------------------------------------
