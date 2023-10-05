@@ -9,7 +9,7 @@ library(forcats)
 library(ggthemes)
 library(cowplot)
 library(dplyr)
-
+library(janitor)
 # preparing firm output data for matlab Log case --------------------------
 data_cluster <- fread(here('Data/firms_logs_oct4.csv'))
 tails_cuttof <- 1/100
@@ -17,6 +17,7 @@ tails_cuttof <- 1/100
 data_cluster <- rename(data_cluster,"mean_wage"="clust_mean_lwage_resid",
                        "sigma_wage"="clust_std_lwage_resid",
                        "theta"="theta1")
+data_cluster <- clean_names(data_cluster)
 data_cluster[,sigma_ou_matlab:=sqrt(2*theta)*sigma_wage]
 data_cluster[,lower_w:=qlnorm(tails_cuttof,mean=mean_wage,sd = sigma_wage )]
 data_cluster[,upper_w:=qlnorm(1-tails_cuttof,mean=mean_wage,sd = sigma_wage )]
