@@ -5,7 +5,7 @@ integral_type = "sum"; % either trapezoidal or sum
 solve_for_dist = true;
 lambda_1 = 0.1207;
 share_j2j_flows_out_total_flows_data = 0.27;
-name_file_firm_data  = "Data/firms_out.csv";
+name_file_firm_data  = "Data/firms_out - Copy.csv";
 load_parameters
 solve_model
 frac_unemployed
@@ -13,11 +13,11 @@ prob_accepting_offer = sum((U<V_new_job_offer).*repmat(g_u,1,N_f).*repmat(p,N_a,
 %% unconditional wage distribution
 mass_each_firm = squeeze(sum(sum(g_e,1),2))*da*dw;
 g_e_w = squeeze(sum(g_e,1)*da)./repmat(mass_each_firm',N_w,1); % this assumes w is in levels
-plot(w,g_e_w(:,2))
+plot(w,g_e_w(:,4))
 % export to csv
 
 export_g = [w',g_e_w];
-writematrix(export_g,'Data/wage_densities_model.csv')
+% writematrix(export_g,'Data/wage_densities_model.csv')
 %% indifference curves
 
 idx_current_wealth = 10;

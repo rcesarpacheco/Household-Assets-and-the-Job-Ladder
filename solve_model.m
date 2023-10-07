@@ -195,10 +195,17 @@ if solve_for_dist
     sz= [N_a,N_w,N_f];
     rows_B = sub2ind(sz,a_B_aux,w_B_aux_idx,f_B_aux_idx);
     B_aux = sparse(rows_B,repelem(1:N_a,N_f),reshape(elements_B_aux,N_a*N_f,1),N_a*N_w*N_f,N_a); % this is term (4) of equation 6 in the paper.
+
+    D3_diag = [s_unemployed(1:N_a-1);-s_unemployed(N_a)]/da;
+    D3_updiag = [0;-s_unemployed(2:N_a)/da];
+    D3_lowdiag = [zeros(N_a-2,1);s_unemployed(N_a-1)/da;0];
+
+    D3 = spdiags(D3_diag,0,N_a,N_a)+spdiags(D3_lowdiag,-1,N_a,N_a)+spdiags(D3_updiag,1,N_a,N_a);
     
     %% A_aux
     elements_A_Aux_3=zeros(N_a*N_w*N_f,1);
     elements_A_Aux_6 = zeros(N_a*N_w*N_f,N_f);
+    A_aux_6_elements_2 = zeros(N_a*N_f,N_a*N_w*N_f);
     idx=1;
     for k=1:N_f
       for j=1:N_w
@@ -209,22 +216,43 @@ if solve_for_dist
             idx=idx+1;
           end
       end
-    end      
+    end
+    
     %%
     a_A6_aux_idx = repmat(1:N_a,1,N_f*N_w);
     a_A6_aux_idx = repelem(a_A6_aux_idx,1,N_f);
     w_A6_aux_idx = repmat(idx_wages_mean',1,N_a*N_w*N_f);
     f_A6_aux_idx = repmat(1:N_f,1,N_a*N_w*N_f);
-    
     rows_A6 = sub2ind(sz,a_A6_aux_idx,w_A6_aux_idx,f_A6_aux_idx);
     columns_A6 = repelem(1:N_a*N_f*N_w,N_f);
     A_aux_6 = sparse(rows_A6,columns_A6,reshape(elements_A_Aux_6',N_a*N_f*N_w*N_f,1),N_a*N_w*N_f,N_a*N_w*N_f);
     
     %%
+    %CONSTRUCT MATRIX A2
+    for i=1:N_f
+        updiag=[0]; %This is needed because of the peculiarity of spdiags.
+        centdiag=[];
+        lowdiag=[];
+        for j=1:N_w
+            updiag=[updiag;-s_employed(2:N_a,j,i)/da;0];
+            centdiag=[centdiag;s_employed(1:N_a-1,j,i)/da;-s_employed(N_a,j,i)/da];
+            lowdiag = [lowdiag;zeros(N_a-2,1);s_employed(N_a-1,j,i)/da;0];
+        end
+        Atilde_block = spdiags(centdiag,0,N_a*N_w,N_a*N_w)+spdiags(updiag,1,N_a*N_w,N_a*N_w)+ ...
+        spdiags(lowdiag,-1,N_a*N_w,N_a*N_w);
+        if i==1
+            Atilde = [Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+    
+        else
+            Atilde = [Atilde;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+      end
+    end
+
+
     
     A_aux = spdiags(elements_A_Aux_3,0,N_a*N_w*N_f,N_a*N_w*N_f)+A_aux_6-firing_rate*speye(N_a*N_w*N_f);  % (3)+(6)-(5)
     
-    A_dist = [(Atilde +Abar)'+A_aux,B_aux;C_aux,Dtilde'+D_aux];
+    A_dist = [Atilde+(Abar)'+A_aux,B_aux;C_aux,D3+D_aux];
     % V_iteration = [reshape(V,N_a*N_f*N_w,1);U];
     % V_dist = ([u_stacked;u_unemployed]+A_dist*V_iteration)/rho;
     % test = max(abs(V_iteration-V_dist)) % if this number is big, i think something is wrong. If it's small, it still might be wrong.
