@@ -230,29 +230,28 @@ if solve_for_dist
     %%
     %CONSTRUCT MATRIX A2
     for i=1:N_f
-        updiag=[0]; %This is needed because of the peculiarity of spdiags.
+        updiag=[]; %This is needed because of the peculiarity of spdiags.
         centdiag=[];
         lowdiag=[];
         for j=1:N_w
-            updiag=[updiag;-s_employed(2:N_a,j,i)/da;0];
-            centdiag=[centdiag;s_employed(1:N_a-1,j,i)/da;-s_employed(N_a,j,i)/da];
-            lowdiag = [lowdiag;zeros(N_a-2,1);s_employed(N_a-1,j,i)/da;0];
+            updiag=[updiag;0;-s_employed(2,j,i)/da;zeros(N_a-2,1)];
+            centdiag=[centdiag;s_employed(1,j,i)/da;-s_employed(2:N_a,j,i)/da];
+            lowdiag = [lowdiag;s_employed(1:N_a-1,j,i)/da;0];
         end
         Atilde_block = spdiags(centdiag,0,N_a*N_w,N_a*N_w)+spdiags(updiag,1,N_a*N_w,N_a*N_w)+ ...
         spdiags(lowdiag,-1,N_a*N_w,N_a*N_w);
         if i==1
-            Atilde = [Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
-    
+            Atilde_dist = [Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
         else
-            Atilde = [Atilde;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
-      end
+            Atilde_dist = [Atilde_dist;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+        end
     end
 
 
     
     A_aux = spdiags(elements_A_Aux_3,0,N_a*N_w*N_f,N_a*N_w*N_f)+A_aux_6-firing_rate*speye(N_a*N_w*N_f);  % (3)+(6)-(5)
     
-    A_dist = [Atilde+(Abar)'+A_aux,B_aux;C_aux,D3+D_aux];
+    A_dist = [Atilde_dist+ Abar'+A_aux,B_aux;C_aux,D3+D_aux];
     % V_iteration = [reshape(V,N_a*N_f*N_w,1);U];
     % V_dist = ([u_stacked;u_unemployed]+A_dist*V_iteration)/rho;
     % test = max(abs(V_iteration-V_dist)) % if this number is big, i think something is wrong. If it's small, it still might be wrong.
