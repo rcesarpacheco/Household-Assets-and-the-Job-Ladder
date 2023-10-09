@@ -225,34 +225,111 @@ if solve_for_dist
     f_A6_aux_idx = repmat(1:N_f,1,N_a*N_w*N_f);
     rows_A6 = sub2ind(sz,a_A6_aux_idx,w_A6_aux_idx,f_A6_aux_idx);
     columns_A6 = repelem(1:N_a*N_f*N_w,N_f);
-    A_aux_6 = sparse(rows_A6,columns_A6,reshape(elements_A_Aux_6',N_a*N_f*N_w*N_f,1),N_a*N_w*N_f,N_a*N_w*N_f);
+    A6 = sparse(rows_A6,columns_A6,reshape(elements_A_Aux_6',N_a*N_f*N_w*N_f,1),N_a*N_w*N_f,N_a*N_w*N_f);
     
     %%
     %CONSTRUCT MATRIX A2
     for i=1:N_f
-        updiag=[0]; %This is needed because of the peculiarity of spdiags.
+        updiag=[]; %This is needed because of the peculiarity of spdiags.
         centdiag=[];
         lowdiag=[];
         for j=1:N_w
-            updiag=[updiag;-s_employed(2:N_a,j,i)/da;0];
+            updiag=[updiag;0;-s_employed(2:N_a,j,i)/da];
             centdiag=[centdiag;s_employed(1:N_a-1,j,i)/da;-s_employed(N_a,j,i)/da];
             lowdiag = [lowdiag;zeros(N_a-2,1);s_employed(N_a-1,j,i)/da;0];
         end
         Atilde_block = spdiags(centdiag,0,N_a*N_w,N_a*N_w)+spdiags(updiag,1,N_a*N_w,N_a*N_w)+ ...
         spdiags(lowdiag,-1,N_a*N_w,N_a*N_w);
         if i==1
-            Atilde = [Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+            A2 = [Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
     
         else
-            Atilde = [Atilde;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+            A2 = [A2;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
       end
+    end
+    
+    %CONSTRUCT MATRIX A1
+    for i=1:N_f
+        sig2 = sigma2_vec(i);
+
+        if wage_type == "log"
+            w_mean = log(w(idx_wages_mean(i)));
+            mu = (thetas(i)*(w_mean - log(w))+sig2/2).*w;        %DRIFT (FROM ITO'S LEMMA)
+            s2 = sig2.*w.^2;        %VARIANCE (FROM ITO'S LEMMA)
+        else
+            w_mean = w(idx_wages_mean(i));
+            mu = thetas(i)*(w_mean - w);        %DRIFT (FROM ITO'S LEMMA)
+            s2 = sig2.*ones(1,N_w);        %VARIANCE (FROM ITO'S LEMMA)
+        end
+        
+        %This will be the center diagonal of the matrix Abar
+        centdiag=[];
+        updiag = zeros(N_a,1);
+        lowdiag = [];
+        for j=1:N_w-1
+            centdiag = [centdiag;repmat(mu(j)/dw,N_a,1)];
+            updiag  = [updiag;repmat(mu(j+1)/dw,N_a,1)];
+            lowdiag = [lowdiag;zeros(N_a,1)];
+        end
+        centdiag=[centdiag;repmat(-mu(N_w)/dw,N_a,1)];
+        lowdiag = [lowdiag;repmat(mu(N_w-1)/dw,N_a,1);zeros(N_a,1)];
+        %Add up the upper, center, and lower diagonal into a sparse matrix
+        Abar_block=spdiags(centdiag,0,N_a*N_w,N_a*N_w)+spdiags(lowdiag,-N_a,N_a*N_w,N_a*N_w)+spdiags(updiag,N_a,N_a*N_w,N_a*N_w);
+        if i==1
+            A1 = [Abar_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+        
+        else
+            A1 = [A1;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Abar_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+        end
+    end
+
+    %CONSTRUCT MATRIX A1 second part
+    for i=1:N_f
+        sig2 = sigma2_vec(i);
+
+        if wage_type == "log"
+            w_mean = log(w(idx_wages_mean(i)));
+            mu = (thetas(i)*(w_mean - log(w))+sig2/2).*w;        %DRIFT (FROM ITO'S LEMMA)
+            s2 = sig2.*w.^2;        %VARIANCE (FROM ITO'S LEMMA)
+        else
+            w_mean = w(idx_wages_mean(i));
+            mu = thetas(i)*(w_mean - w);        %DRIFT (FROM ITO'S LEMMA)
+            s2 = sig2.*ones(1,N_w);        %VARIANCE (FROM ITO'S LEMMA)
+        end
+        
+        %This will be the center diagonal of the matrix Abar
+        centdiag=[];
+        updiag = zeros(N_a,1);
+        lowdiag = [];
+        for j=1:N_w-1
+            centdiag = [centdiag;-2*repmat(s2(j)/(2*dw2),N_a,1)];
+            updiag  = [updiag;repmat(s2(j+1)/(2*dw2),N_a,1)];
+        end
+
+        for j=2:N_w
+            lowdiag = [lowdiag;repmat(s2(j-1)/(2*dw2),N_a,1);];
+        end
+        lowdiag = [lowdiag;zeros(N_a,1)];
+        centdiag = [centdiag;-2*repmat(s2(N_w)/(2*dw2),N_a,1)];
+        %Add up the upper, center, and lower diagonal into a sparse matrix
+        Abar_block=spdiags(centdiag,0,N_a*N_w,N_a*N_w)+spdiags(lowdiag,-N_a,N_a*N_w,N_a*N_w)+spdiags(updiag,N_a,N_a*N_w,N_a*N_w);
+        if i==1
+            A1_2 = [Abar_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+        
+        else
+            A1_2 = [A1_2;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Abar_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
+        end
     end
 
 
+
     
-    A_aux = spdiags(elements_A_Aux_3,0,N_a*N_w*N_f,N_a*N_w*N_f)+A_aux_6-firing_rate*speye(N_a*N_w*N_f);  % (3)+(6)-(5)
-    
-    A_dist = [Atilde+(Abar)'+A_aux,B_aux;C_aux,D3+D_aux];
+    % A_aux = spdiags(elements_A_Aux_3,0,N_a*N_w*N_f,N_a*N_w*N_f)+A_aux_6-firing_rate*speye(N_a*N_w*N_f);  % (3)+(6)-(5)
+    A3 =  spdiags(elements_A_Aux_3,0,N_a*N_w*N_f,N_a*N_w*N_f);
+    A5 = -firing_rate*speye(N_a*N_w*N_f);
+    % A_dist = [Atilde'+(Abar)'+A_aux,B_aux;C_aux,D3+D_aux];
+    A_dist = [A1+A1_2+A2+A3+A5+A6,B_aux;C_aux,D3+D_aux];
+
     % V_iteration = [reshape(V,N_a*N_f*N_w,1);U];
     % V_dist = ([u_stacked;u_unemployed]+A_dist*V_iteration)/rho;
     % test = max(abs(V_iteration-V_dist)) % if this number is big, i think something is wrong. If it's small, it still might be wrong.
