@@ -69,7 +69,15 @@ ww = repmat(w,N_a,1,N_f);
 
 idx_wages_mean = zeros(N_f,1); % vector of the indexes of the closest element in the wage grid from the wmean
 for i=1:N_f
-    w_mean = w_mean_vec(i);
+    % find closest wage in the grid to the mean_wages. Not used here, will
+    % be used later in the VF iteration!
+    if wage_type == "log"
+        [~,idx_wages_mean(i)] = min(abs(w-exp(w_mean_vec(i))));
+        w_mean = log(w(idx_wages_mean(i)));
+    else
+        [~,idx_wages_mean(i)] = min(abs(w-w_mean_vec(i)));
+        w_mean = w(idx_wages_mean(i));
+    end
     sig2 = sigma2_vec(i);
     if wage_type == "log"
         mu = (thetas(i)*(w_mean - log(w))+sig2/2).*w;        %DRIFT (FROM ITO'S LEMMA)
@@ -109,13 +117,6 @@ for i=1:N_f
     
     else
         Abar = [Abar;repmat(sparse(N_a*N_w,N_a*N_w),1,i-1),Abar_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
-    end
-    % find closest wage in the grid to the mean_wages. Not used here, will
-    % be used later in the VF iteration!
-    if wage_type == "log"
-        [~,idx_wages_mean(i)] = min(abs(w-exp(w_mean_vec(i))));
-    else
-         [~,idx_wages_mean(i)] = min(abs(w-w_mean_vec(i)));
     end
 end
 
