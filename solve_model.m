@@ -41,10 +41,10 @@ while err>tol_vf
 
     %consumption and savings with forward difference
     cf = Vaf.^(-1/ga);
-    sf = ww + r.*aa - cf;
+    sf_e = ww + r.*aa - cf;
     %consumption and savings with backward difference
     cb = Vab.^(-1/ga);
-    sb = ww + r.*aa - cb;
+    sb_e = ww + r.*aa - cb;
     %consumption and derivative of value function at steady state. Savings
     %is equal to 0
     c0 = ww + r.*aa;
@@ -52,8 +52,8 @@ while err>tol_vf
 
     % dV_upwind makes a choice of forward or backward differences based on
     % the sign of the drift
-    If = sf > 0; %positive drift --> forward difference
-    Ib = sb < 0; %negative drift --> backward difference
+    If = sf_e > 0; %positive drift --> forward difference
+    Ib = sb_e < 0; %negative drift --> backward difference
     I0 = (1-If-Ib); %at steady state
   
     % value of receiving a offer from each firm, for each possible wealth
@@ -77,9 +77,9 @@ while err>tol_vf
 
     %CONSTRUCT MATRIX A
     for i=1:N_f
-        X = - min(sb(:,:,i),0)/da;
-        Y = - max(sf(:,:,i),0)/da + min(sb(:,:,i),0)/da;
-        Z = max(sf(:,:,i),0)/da;
+        X = - min(sb_e(:,:,i),0)/da;
+        Y = - max(sf_e(:,:,i),0)/da + min(sb_e(:,:,i),0)/da;
+        Z = max(sf_e(:,:,i),0)/da;
         
         updiag=[0]; %This is needed because of the peculiarity of spdiags.
         for j=1:N_w
@@ -123,18 +123,18 @@ while err>tol_vf
 
     %consumption and savings with forward difference
     cf = Uaf.^(-1/ga);
-    sf = inc_unemployed + r.*a - cf;
+    sf_u = inc_unemployed + r.*a - cf;
     %consumption and savings with backward difference
     cb = Uab.^(-1/ga);
-    sb = inc_unemployed + r.*a - cb;
+    sb_u = inc_unemployed + r.*a - cb;
     %consumption and derivative of value function at steady state
     c0 = inc_unemployed + r.*a;
     Ua0 = c0.^(-ga);
 
     % dV_upwind makes a choice of forward or backward differences based on
     % the sign of the drift
-    If = sf > 0; %positive drift --> forward difference
-    Ib = sb < 0; %negative drift --> backward difference
+    If = sf_u > 0; %positive drift --> forward difference
+    Ib = sb_u < 0; %negative drift --> backward difference
     I0 = (1-If-Ib); %at steady state
   
     Ua_Upwind = Uaf.*If + Uab.*Ib + Ua0.*I0; 
@@ -144,9 +144,9 @@ while err>tol_vf
     u_unemployed = c_unemployed.^(1-ga)/(1-ga);
     
     %CONSTRUCT MATRIX D for unemployment
-    X = - min(sb,0)/da;
-    Y = - max(sf,0)/da + min(sb,0)/da;
-    Z = max(sf,0)/da;
+    X = - min(sb_u,0)/da;
+    Y = - max(sf_u,0)/da + min(sb_u,0)/da;
+    Z = max(sf_u,0)/da;
     
     updiag=[0;Z(1:N_a-1)]; %need to put a fucking 0 because the spdiags is the most stupid function in matlab
     centdiag=Y;
@@ -233,13 +233,28 @@ if solve_for_dist
         updiag=[]; %This is needed because of the peculiarity of spdiags.
         centdiag=[];
         lowdiag=[];
+        % for j=1:N_w
+        %     updiag=[updiag;0;-s_employed(2:N_a,j,i)/da];
+        %     centdiag=[centdiag;s_employed(1:N_a-1,j,i)/da;-s_employed(N_a,j,i)/da];
+        %     lowdiag = [lowdiag;zeros(N_a-2,1);s_employed(N_a-1,j,i)/da;0];
+        % end
+
         for j=1:N_w
-            updiag=[updiag;0;-s_employed(2:N_a,j,i)/da];
-            centdiag=[centdiag;s_employed(1:N_a-1,j,i)/da;-s_employed(N_a,j,i)/da];
-            lowdiag = [lowdiag;zeros(N_a-2,1);s_employed(N_a-1,j,i)/da;0];
+            se_f_p = max(sf_e(:,j,i),0)/da;
+            se_b_n = min(sb_e(:,j,i),0)/da;
+            updiag=[0;-se_f_p(2:N_a)];
+            centdiag=se_f_p-se_b_n;
+            lowdiag = [se_b_n(1:N_a-1);0];
+            Aw_block = spdiags(centdiag,0,N_a,N_a)+spdiags(updiag,1,N_a,N_a)+ ...
+                spdiags(lowdiag,-1,N_a,N_a);
+            if j==1
+                Atilde_block=[Aw_block,repmat(sparse(N_a,N_a),1,N_w-j)];
+            else
+                Atilde_block = [Atilde_block;repmat(sparse(N_a,N_a),1,j-1),Aw_block,repmat(sparse(N_a,N_a),1,N_w-j)];
+            end
         end
-        Atilde_block = spdiags(centdiag,0,N_a*N_w,N_a*N_w)+spdiags(updiag,1,N_a*N_w,N_a*N_w)+ ...
-        spdiags(lowdiag,-1,N_a*N_w,N_a*N_w);
+        % Atilde_block = spdiags(centdiag,0,N_a*N_w,N_a*N_w)+spdiags(updiag,1,N_a*N_w,N_a*N_w)+ ...
+        % spdiags(lowdiag,-1,N_a*N_w,N_a*N_w);
         if i==1
             A2 = [Atilde_block,repmat(sparse(N_a*N_w,N_a*N_w),1,N_f-i)];
     
@@ -268,7 +283,7 @@ if solve_for_dist
         lowdiag = [];
         for j=1:N_w-1
             centdiag = [centdiag;repmat(mu(j)/dw,N_a,1)];
-            updiag  = [updiag;repmat(mu(j+1)/dw,N_a,1)];
+            updiag  = [updiag;-repmat(mu(j+1)/dw,N_a,1)];
             lowdiag = [lowdiag;zeros(N_a,1)];
         end
         centdiag=[centdiag;repmat(-mu(N_w)/dw,N_a,1)];
