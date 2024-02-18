@@ -6,12 +6,12 @@
 
 ga = 2;       % CRRA utility with parameter gamma
 rho = 0.05;   % discount rate
-firing_rate = 0.175; % poisson rate of getting fired
+firing_rate = 0.04; % poisson rate of getting fired
 lambda_0 = 0.51; % poisson rate of job offers when unemployed.
-lambda_1 = 0.43; % poisson rate of job offers when employed.
+lambda_1 = 0.51; % poisson rate of job offers when employed.
 disutility_working = 0.0;
 r = 0.03; %interest rate
-inc_unemployed = 0.1; %income when unemployed
+inc_unemployed = 0.41; %income when unemployed
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                    %
@@ -21,11 +21,11 @@ inc_unemployed = 0.1; %income when unemployed
 
 % assets
 amin = 0;    % borrowing constraint
-amax = 500*1e3;  % range a
-N_a=500;    % number of a grid points
+amax = 500;  % range a
+N_a=1000;    % number of a grid points
 
 %simulation parameters
-tol_vf = 10^(-8); %criterion HJB loop
+tol_vf = 10^(-6); %criterion HJB loop
 Delta = 100;   %delta in HJB algorithm
 
 % FIRMS - sigmas and mu for each wage path.

@@ -9,11 +9,56 @@ library(forcats)
 library(ggthemes)
 library(cowplot)
 library(dplyr)
+library(haven)
+
+
+# histogram delta wages introduction --------------------------------------
+
+data <- data.table(read_dta(here('Dropbox/micro_data/firm_wage_assets_clean.dta')))
+
+data <- data[order(id,interview_year),]
+
+data[,delta_w:=lwage_resid-shift(lwage_resid),by=id]
+data[,wage_shift:=shift(lwage_resid),by=id]
+
+data[,same_job:=(firm_num==shift(firm_num)),by=id]
+data[,same_occ:=(occup==shift(occup)),by=id]
+data[,consec_years:=(interview_year==shift(interview_year)+1),by=id]
+data_hist <- data[consec_years & same_job & same_occ,]
+
+#comparing with madeline old values
+nrow(data_hist[delta_w <= 0.05,])/nrow(data_hist)
+# plot
+
+plt <- ggplot(data_hist, aes(x=delta_w)) + 
+  geom_histogram(aes(y = after_stat(count / sum(count))), binwidth=0.05, fill="#007bc8", color="#e9ecef", alpha=0.8) +
+  # ggtitle('Change in Real Wages for Workers Holding the Same Job') +
+  theme_bw()+
+  theme(panel.grid.minor = element_blank())+
+  xlim(c(-1,1))+
+  scale_y_continuous(labels = scales::percent)+
+  xlab(TeX("$\\Delta \\ln(wage)$"))+
+  ylab('Frequency')
+plt
+
+ggsave(here('Results/Figures//hist_change_wages.png'),plot = plt,height = 5,width=8,scale=1)
+
+
+factorx <- factor(cut(data_hist$delta_w, breaks=c(-10,-5,0,5,10)/100))
+#Tabulate and turn into data.frame
+xout <- as.data.frame(table(factorx))
+#Add cumFreq and proportions
+xout <- transform(xout, cumFreq = cumsum(Freq), relative = prop.table(Freq))
+
+quantile(data_hist$delta_w)
+
+breaks <- c(-0.10,-0.05,0,0.05,0.10)
+nrow(data_hist[delta_w< -0.10])/nrow(data_hist)*100
+nrow(data_hist[delta_w> 0.10])/nrow(data_hist)*100
 
 # preparing firm output data for matlab Log case --------------------------
 data_cluster <- fread(here('Data/firms_logs_sep28.csv'))
 tails_cuttof <- 1/100
-
 data_cluster <- rename(data_cluster,"mean_wage"="clust_mean_lwage_resid",
                        "sigma_wage"="clust_std_lwage_resid",
                        "theta"="theta1")
@@ -67,39 +112,43 @@ plt
 
 # indifference curve data -------------------------------------------------
 
-data_firms <- fread(here('wage in levels/firms_levels_out.csv'))
+# data_firms <- fread(here('wage in levels/firms_levels_out.csv'))
 theta <- 0.15
 tails_cuttof <- 2.5/100
-min_sigma <- min(data_firms$sigma_ou_matlab)
-max_sigma <- max(data_firms$sigma_ou_matlab)
-min_mean <- min(data_firms$mean_wage_resid)
-max_mean <- max(data_firms$mean_wage_resid)
+# min_sigma <- min(data_firms$sigma_ou_matlab)
+# max_sigma <- max(data_firms$sigma_ou_matlab)
+# min_mean <- min(data_firms$mean_wage_resid)
+# max_mean <- max(data_firms$mean_wage_resid)
+min_sigma <- 0.05
+max_sigma <- 0.5
+min_mean <- -0.35
+max_mean <- 0.35
 n_sigma <- 10
 n_mean <- 10
 grid_mean <- seq(from=min_mean,to=max_mean,length.out =n_mean)
 grid_sigma <- seq(from=min_sigma,to=max_sigma,length.out =n_sigma)
 grid <- expand.grid(grid_mean,grid_sigma)
-data_indifference <- data.table(mean_wage_resid=grid$Var1,sigma_ou_matlab=grid$Var2)
+data_indifference <- data.table(mean_wage=grid$Var1,sigma_ou_matlab=grid$Var2)
 data_indifference[,sd_diff_wage_resid:=sigma_ou_matlab/sqrt(2*theta)]
 data_indifference[,firm_share:=0]
-data_indifference[,rank_fun:=sd_diff_wage_resid-mean_wage_resid]
+data_indifference[,rank_fun:=sd_diff_wage_resid-mean_wage]
 data_indifference[,firm_rank:=rank(rank_fun)]
 
-# data_indifference[,lower_w:=qnorm(tails_cuttof,mean=mean_wage_resid,sd = sd_diff_wage_resid)]
-data_indifference[,lower_w:=6.4]
-data_indifference[,upper_w:=100]
+data_indifference[,lower_w:=qlnorm(tails_cuttof,mean=mean_wage,sd = sd_diff_wage_resid)]
+data_indifference[,upper_w:=qlnorm(1-tails_cuttof,mean=mean_wage,sd = sd_diff_wage_resid)]
 data_indifference[,min_w:=min(data_indifference$lower_w)]
 data_indifference[,max_w:=max(data_indifference$upper_w)]
+data_indifference[,theta:=theta]
 
-fwrite(data_indifference,file = here('wage in levels/data_indifference.csv'))
+fwrite(data_indifference,file = here('Data/data_indifference.csv'))
 
 # indifference curve plots ------------------------------------------------
 pallete <- brewer.pal(6,name = 'RdBu')
 # data_plot_indifference_poor <- fread(here('wage in levels/indifference_curve_poor.csv'),col.names = c('Mean_log_wage','Sd_log_wage','V'))
 # data_plot_indifference_rich <- fread(here('wage in levels/indifference_curve_rich.csv'),col.names = c('Mean_log_wage','Sd_log_wage','V'))
 
-data_plot_indifference_poor <- fread(here("Multigrid wage/Levels/indifference_curve_poor.csv"),col.names = c('Mean_log_wage','Sd_log_wage','V'))
-data_plot_indifference_rich <- fread(here("Multigrid wage/Levels/indifference_curve_rich.csv"),col.names = c('Mean_log_wage','Sd_log_wage','V'))
+data_plot_indifference_poor <- fread(here("Results/indifference_curve_poor.csv"),col.names = c('Mean_log_wage','Sd_log_wage','V'))
+data_plot_indifference_rich <- fread(here("Results/indifference_curve_rich.csv"),col.names = c('Mean_log_wage','Sd_log_wage','V'))
 
 
 
@@ -110,44 +159,44 @@ data_plot_indifference <- rbind(data_plot_indifference_poor,data_plot_indifferen
 # data_plot_indifference[,V:=round(V,4)]
 
 
-data_cluster <- fread('wage in levels/firms_levels_out.csv')
+# data_cluster <- fread('wage in levels/firms_levels_out.csv')
 
-
+line_width <- 0.7
 plt_poor <- ggplot()+
   # geom_contour(data = data_plot_indifference[Wealth=='Poor',], 
   #              aes(x = Mean_log_wage, y = Sd_log_wage, z = V, colour = after_stat(level)),linewidth=0.2,
   #              breaks = quantile(data_plot_indifference[Wealth=='Poor',V],seq(0,1,length.out=15)))+
   
   geom_contour(data = data_plot_indifference[Wealth=='Poor',], 
-               aes(x = Mean_log_wage, y = Sd_log_wage, z = V, colour = after_stat(level)),linewidth=0.2,
+               aes(x = Mean_log_wage, y = Sd_log_wage, z = V, colour = after_stat(level)),linewidth=line_width,
                bins = 15)+
-  scale_color_gradient(low = pallete[6],high = pallete[1] )+
+  scale_color_gradient(low = pallete[6],high = pallete[1],labels = function(x) sprintf("%.2f", x))+
   theme_bw()+
   ylab(TeX(r"($\sigma_f$)"))+
   xlab(TeX(r"($\bar {w}_f$)"))+
   labs(colour="Value Job\nOffer ")+
-  geom_point(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab))+
-  geom_text_repel(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab,label=firm_rank),nudge_y=0.01,show.legend=FALSE,min.segment.length = Inf)+
+  # geom_point(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab))+
+  # geom_text_repel(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab,label=firm_rank),nudge_y=0.01,show.legend=FALSE,min.segment.length = Inf)+
   theme(panel.grid = element_blank(),legend.title.align = 0.5)
 
 plt_rich <- ggplot()+
   geom_contour(data = data_plot_indifference[Wealth=='Rich',], 
-               aes(x = Mean_log_wage, y = Sd_log_wage, z = V, colour = after_stat(level)),linewidth=0.2,
+               aes(x = Mean_log_wage, y = Sd_log_wage, z = V, colour = after_stat(level)),linewidth=line_width,
                bins = 15)+
-  scale_color_gradient(low = pallete[6],high = pallete[1])+
+  scale_color_gradient(low = pallete[6],high = pallete[1],labels = function(x) sprintf("%.3f", x))+
                theme_bw()+
   ylab(TeX(r"($\sigma_f$)"))+
   xlab(TeX(r"($\bar {w}_f$)"))+
   labs(colour="Value Job\nOffer ")+
-  geom_point(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab))+
-  geom_text_repel(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab,label=firm_rank),nudge_y=0.01,show.legend=FALSE,min.segment.length = Inf)+
+  # geom_point(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab))+
+  # geom_text_repel(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab,label=firm_rank),nudge_y=0.01,show.legend=FALSE,min.segment.length = Inf)+
   theme(panel.grid = element_blank(),legend.title.align = 0.5)
 
 
 plt_rich
 plt_poor
-ggsave(here('Figures/multigrid_indifference_curve_levels_rich.png'),plot = plt_rich,height = 5,width=8,scale=1)
-ggsave(here('Figures/multigrid_indifference_curve_levels_poor.png'),plot = plt_poor,height = 5,width=8,scale=1)
+ggsave(here('Results/Figures/multigrid_indifference_curve_levels_rich.png'),plot = plt_rich,height = 5,width=8,scale=1)
+ggsave(here('Results/Figures/multigrid_indifference_curve_levels_poor.png'),plot = plt_poor,height = 5,width=8,scale=1)
 
 
 
