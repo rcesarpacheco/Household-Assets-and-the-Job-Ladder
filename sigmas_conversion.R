@@ -10,9 +10,104 @@ library(ggthemes)
 library(cowplot)
 library(dplyr)
 library(haven)
+library(Hmisc)
+library(kableExtra)
+library(cowplot)
 
 
-# histogram delta wages introduction --------------------------------------
+
+
+# histogram delta wage introduction ---------------------------------------
+data <- data.table(read_dta(here('Dropbox/micro_data/firm_wage_assets_clean.dta')))
+
+data <- data[order(id,interview_year),]
+
+data[,delta_w:=lwage-shift(lwage),by=id]
+data[,wage_shift:=shift(lwage),by=id]
+
+data[,same_job:=(firm_num==shift(firm_num)),by=id]
+data[,same_occ:=(occup==shift(occup)),by=id]
+data[,consec_years:=(interview_year==shift(interview_year)+1),by=id]
+data_hist <- data[consec_years & same_job & same_occ,]
+
+#comparing with madeline old values
+nrow(data_hist[delta_w <= 0.05,])/nrow(data_hist)
+# plot
+
+plt <- ggplot(data_hist, aes(x=delta_w)) + 
+  geom_histogram(aes(y = after_stat(count / sum(count))), binwidth=0.05, fill="#007bc8", color="#e9ecef", alpha=0.8) +
+  # ggtitle('Change in Real Wages for Workers Holding the Same Job') +
+  theme_bw()+
+  theme(panel.grid = element_blank())+
+  xlim(c(-1,1))+
+  scale_y_continuous(labels = scales::percent)+
+  xlab(TeX("$\\Delta \\ln(wage)$"))+
+  ylab('Frequency')
+plt
+
+ggsave(here('Results/Figures//hist_change_wages.png'),plot = plt,height = 5,width=8,scale=1)
+
+
+factorx <- factor(cut(data_hist$delta_w, breaks=c(-10,-5,0,5,10)/100))
+#Tabulate and turn into data.frame
+xout <- as.data.frame(table(factorx))
+#Add cumFreq and proportions
+xout <- transform(xout, cumFreq = cumsum(Freq), relative = prop.table(Freq))
+
+quantile(data_hist$delta_w)
+
+breaks <- c(-0.10,-0.05,0,0.05,0.10)
+nrow(data_hist[delta_w< -0.10])/nrow(data_hist)*100
+nrow(data_hist[delta_w> 0.10])/nrow(data_hist)*100
+
+# histogram delta wages residuals introduction --------------------------------------
+
+data <- data.table(read_dta(here('Dropbox/micro_data/firm_wage_assets_clean.dta')))
+
+data <- data[order(id,interview_year),]
+
+data[,delta_w:=lwage_resid-shift(lwage_resid),by=id]
+data[,wage_shift:=shift(lwage_resid),by=id]
+
+data[,same_job:=(firm_num==shift(firm_num)),by=id]
+data[,same_occ:=(occup==shift(occup)),by=id]
+data[,consec_years:=(interview_year==shift(interview_year)+1),by=id]
+data_hist <- data[consec_years & same_job & same_occ,]
+
+#comparing with madeline old values
+nrow(data_hist[delta_w <= 0.05,])/nrow(data_hist)
+# plot
+
+plt <- ggplot(data_hist, aes(x=delta_w)) + 
+  geom_histogram(aes(y = after_stat(count / sum(count))), binwidth=0.05, fill="#007bc8", color="#e9ecef", alpha=0.8) +
+  # ggtitle('Change in Real Wages for Workers Holding the Same Job') +
+  theme_bw()+
+  theme(panel.grid = element_blank())+
+  xlim(c(-1,1))+
+  scale_y_continuous(labels = scales::percent)+
+  xlab(TeX("$\\Delta \\ln(wage)$"))+
+  ylab('Frequency')
+plt
+
+ggsave(here('Results/Figures/hist_change_wages_resids.png'),plot = plt,height = 5,width=8,scale=1)
+
+
+factorx <- factor(cut(data_hist$delta_w, breaks=c(-10,-5,0,5,10)/100))
+#Tabulate and turn into data.frame
+xout <- as.data.frame(table(factorx))
+#Add cumFreq and proportions
+xout <- transform(xout, cumFreq = cumsum(Freq), relative = prop.table(Freq))
+
+quantile(data_hist$delta_w)
+
+breaks <- c(-0.10,-0.05,0,0.05,0.10)
+nrow(data_hist[delta_w< -0.10])/nrow(data_hist)*100
+nrow(data_hist[delta_w> 0.10])/nrow(data_hist)*100
+
+
+
+
+# histogram delta wages residuals introduction --------------------------------------
 
 data <- data.table(read_dta(here('Dropbox/micro_data/firm_wage_assets_clean.dta')))
 
@@ -75,9 +170,9 @@ fwrite(data_cluster,file = here('Data/firms_out.csv'))
 
 # generate fake dataset ---------------------------------------------------
 tails_cuttof <- 2.5/100
-n_firms <- 4
-mean_wage <- seq(from=1,to=1.5,length.out=n_firms)
-sigma_wage <- seq(from=0.5,to=1,length.out=n_firms)
+n_firms <- 25
+mean_wage <- rep(-0.5,n_firms)
+sigma_wage <- seq(from=1,to=3,length.out=n_firms)
 firm_rank <- 1:n_firms
 firm_size <- rep(1,n_firms)
 rank_fun <- 0
@@ -95,7 +190,85 @@ data_fake[,lower_w:=qlnorm(tails_cuttof,mean=mean_wage,sd = sigma_wage )]
 data_fake[,upper_w:=qlnorm(1-tails_cuttof,mean=mean_wage,sd = sigma_wage )]
 data_fake[,min_w:=min(data_fake$lower_w)]
 data_fake[,max_w:=max(data_fake$upper_w)]
-fwrite(data_fake,file = here('Data/firms_out_fake.csv'))
+fwrite(data_fake,file = here('Data/firms_out_fake_feb_2024.csv'))
+
+
+
+
+# plot sigma exercise -----------------------------------------------------
+theta <- 0.15
+data_ex_sigmas <- fread(here('Data/firms_out_fake_feb_2024.csv'))
+data_plot_sigma <- fread(here('Results/sigma_exercise_output_matlab2.csv'))
+
+data_plot_sigma <- data_plot_sigma[,c(1,2,8,501,1001)]
+colnames(data_plot_sigma) <-c('sigma_wage','No assets','Poor','Middle Wealth','Rich')
+data_plot_sigma[,sigma_wage:=sigma_wage/sqrt(2*theta)]
+
+data_plot_sigma <- melt(data_plot_sigma,id.vars = 'sigma_wage',variable.name = 'Wealth',value.name = 'Value Job Offer')
+
+
+plt1 <- ggplot(data_plot_sigma[Wealth=='No assets',],aes(x=sigma_wage,y=`Value Job Offer`))+
+  geom_line(color='#007bc8')+
+  geom_point(color='#007bc8',size=0.5)+
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+
+  theme_classic()+
+  ggtitle('No assets')+
+  ylab('')+
+  theme(panel.grid.minor = element_blank(), 
+        axis.title.x = element_blank(), axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust=0.5,size = 9))
+
+plt2 <- ggplot(data_plot_sigma[Wealth=='Poor',],aes(x=sigma_wage,y=`Value Job Offer`))+
+  geom_line(color='#007bc8')+
+  geom_point(color='#007bc8',size=0.5)+
+  scale_y_continuous(labels = scales::label_number(accuracy = 0.01))+
+  theme_classic()+
+  ggtitle('Poor')+
+  ylab('')+
+  theme(panel.grid.minor = element_blank(), 
+        axis.title.x = element_blank(), axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust=0.5,size = 9))
+
+plt3 <- ggplot(data_plot_sigma[Wealth=='Middle Wealth',],aes(x=sigma_wage,y=`Value Job Offer`))+
+  geom_line(color='#007bc8')+
+  geom_point(color='#007bc8',size=0.5)+
+  scale_y_continuous(labels = scales::label_number(accuracy = 0.001))+
+  ggtitle('Middle Wealth')+
+  theme_classic()+
+  ylab('')+
+  theme(panel.grid.minor = element_blank(), 
+        axis.title.x = element_blank(), axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust=0.5,size = 9))
+
+
+plt4 <- ggplot(data_plot_sigma[Wealth=='Rich',],aes(x=sigma_wage,y=`Value Job Offer`))+
+  geom_line(color='#007bc8')+
+  geom_point(color='#007bc8',size=0.5)+
+  scale_y_continuous(labels = scales::label_number(accuracy = 0.001))+
+  xlab(TeX(r"($\sigma_f$)"))+
+  ggtitle('Rich')+
+  ylab('')+
+  theme_classic()+
+  theme(panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust=0.5,size = 9))
+
+plt1
+plt2
+plt3
+
+figure <- plot_grid(plt1,plt2,plt3,plt4,
+                    ncol = 1, nrow = 4, align = "v")
+figure
+teste <- grid.arrange(figure,left='Value Job Offer')
+
+ggsave(here('Results/Figures/sigma_exercise2.png'),plot = teste,height = 4,width=4,scale=1.5)
+
+
+
+
 # plot firm characteristic -------------------------------------------------------------------
 data_cluster <- fread(here('wage in levels/firms_levels_out.csv'))
 
@@ -144,8 +317,6 @@ fwrite(data_indifference,file = here('Data/data_indifference.csv'))
 
 # indifference curve plots ------------------------------------------------
 pallete <- brewer.pal(6,name = 'RdBu')
-# data_plot_indifference_poor <- fread(here('wage in levels/indifference_curve_poor.csv'),col.names = c('Mean_log_wage','Sd_log_wage','V'))
-# data_plot_indifference_rich <- fread(here('wage in levels/indifference_curve_rich.csv'),col.names = c('Mean_log_wage','Sd_log_wage','V'))
 
 data_plot_indifference_poor <- fread(here("Results/indifference_curve_poor.csv"),col.names = c('Mean_log_wage','Sd_log_wage','V'))
 data_plot_indifference_rich <- fread(here("Results/indifference_curve_rich.csv"),col.names = c('Mean_log_wage','Sd_log_wage','V'))
@@ -159,7 +330,7 @@ data_plot_indifference <- rbind(data_plot_indifference_poor,data_plot_indifferen
 # data_plot_indifference[,V:=round(V,4)]
 
 
-# data_cluster <- fread('wage in levels/firms_levels_out.csv')
+data_cluster <- fread('Data/cluster_data_monthly.csv')
 
 line_width <- 0.7
 plt_poor <- ggplot()+
@@ -175,8 +346,8 @@ plt_poor <- ggplot()+
   ylab(TeX(r"($\sigma_f$)"))+
   xlab(TeX(r"($\bar {w}_f$)"))+
   labs(colour="Value Job\nOffer ")+
-  # geom_point(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab))+
-  # geom_text_repel(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab,label=firm_rank),nudge_y=0.01,show.legend=FALSE,min.segment.length = Inf)+
+  geom_point(data=data_cluster,aes(x=mean_lwage_resid,y=std_lwage_resid))+
+  # geom_text_repel(data=data_cluster,aes(x=mean_lwage_resid,y=std_lwage_resid,label=firm_rank),nudge_y=0.01,show.legend=FALSE,min.segment.length = Inf)+
   theme(panel.grid = element_blank(),legend.title.align = 0.5)
 
 plt_rich <- ggplot()+
@@ -188,15 +359,15 @@ plt_rich <- ggplot()+
   ylab(TeX(r"($\sigma_f$)"))+
   xlab(TeX(r"($\bar {w}_f$)"))+
   labs(colour="Value Job\nOffer ")+
-  # geom_point(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab))+
+  geom_point(data=data_cluster,aes(x=mean_lwage_resid,y=std_lwage_resid))+
   # geom_text_repel(data=data_cluster,aes(x=mean_wage_resid,y=sigma_ou_matlab,label=firm_rank),nudge_y=0.01,show.legend=FALSE,min.segment.length = Inf)+
   theme(panel.grid = element_blank(),legend.title.align = 0.5)
 
 
 plt_rich
 plt_poor
-ggsave(here('Results/Figures/multigrid_indifference_curve_levels_rich.png'),plot = plt_rich,height = 5,width=8,scale=1)
-ggsave(here('Results/Figures/multigrid_indifference_curve_levels_poor.png'),plot = plt_poor,height = 5,width=8,scale=1)
+ggsave(here('Results/Figures/indifference_curve_levels_rich.png'),plot = plt_rich,height = 5,width=8,scale=1.2)
+ggsave(here('Results/Figures/indifference_curve_levels_poor.png'),plot = plt_poor,height = 5,width=8,scale=1.2)
 
 
 
@@ -465,7 +636,6 @@ figure <- plot_grid(plt1,plt2,plt3,
 )
 
 figure
-ggsave(here('Figures/sigma_exercise.png'),plot = figure,height = 4,width=5,scale=1.5)
 # table grids -------------------------------------------------------------
 
 data_grid <- fread(here('wage in levels/grid_parameters.csv'))

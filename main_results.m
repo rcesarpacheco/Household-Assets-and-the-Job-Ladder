@@ -3,11 +3,11 @@ clc;
 
 wage_type = "log";
 solve_for_dist = false;
-name_file_firm_data  = "Data/data_indifference.csv";
+name_file_firm_data  = "Data/firms_out_fake_feb_2024.csv";
 slope = 0;
 load_parameters
 solve_model
-save('Workspace\wkspace_ind2.mat')    
+save('Workspace\wkspace_sigma_ex2.mat')    
 %% indifference curves
 
 idx_current_wealth = 1000;
@@ -43,3 +43,10 @@ plot3(w_mean_vec,sigma_vec,v_offer_current_wealth,"*k")
 %%
 export_v = [means_q(:),sigma_q(:),v_interpolate(:)];
 writematrix(export_v,'Results/indifference_curve_rich.csv')
+
+%% export sigma exercise
+export_v = [sigma_vec,V_new_job_offer'];
+
+writematrix(export_v,'Results/sigma_exercise_output_matlab2.csv')
+
+
